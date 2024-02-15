@@ -1,0 +1,56 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Gesture Recognition</title>
+</head>
+<body>
+    <h1>Hand Gesture Recognition</h1>
+    <div id="video-container">
+        <video id="video-feed" autoplay></video>
+    </div>
+    <div id="prediction"></div>
+
+    <script>
+        // Get video feed from webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                var video = document.getElementById('video-feed');
+                video.srcObject = stream;
+            })
+            .catch(function (err) {
+                console.error('Error accessing webcam:', err);
+            });
+
+        // Send video frame to Flask server for processing
+        setInterval(function () {
+            var video = document.getElementById('video-feed');
+            var canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            var context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            var imageDataURL = canvas.toDataURL('image/jpeg');
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageDataURL })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Prediction:', data);
+                document.getElementById('prediction').innerText = 'Prediction: ' + data.prediction;
+            })
+            .catch(error => {
+                console.error('Error predicting gesture:', error);
+            });
+        }, 1000); // Adjust the interval as needed
+    </script>
+</body>
+</html>
